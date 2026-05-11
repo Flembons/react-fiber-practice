@@ -15,12 +15,12 @@ export default function ThreeCanvas() {
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(
-      75,
+      90,
       mount.clientWidth / mount.clientHeight,
       0.1,
       1000,
     );
-    camera.position.set(0, 1.5, 4);
+    camera.position.set(0, 0, 2);
 
     // 3. Renderer — append to mountRef div
     const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -29,17 +29,17 @@ export default function ThreeCanvas() {
     mount.appendChild(renderer.domElement);
 
     // 4. Lights (AmbientLight + DirectionalLight)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5);
+    directionalLight.position.set(0, 0, 5);
     scene.add(directionalLight);
 
     // 5. Mesh (BoxGeometry + MeshPhongMaterial)
     const geometry = new THREE.BoxGeometry(1, 1, 1);
     const material = new THREE.MeshPhongMaterial({
-      color: "#61f5c1",
-      shininess: 80,
+      color: "#60cfa8",
+      shininess: 100,
     });
     const cube = new THREE.Mesh(geometry, material);
     scene.add(cube);
@@ -64,8 +64,8 @@ export default function ThreeCanvas() {
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const delta = clock.getDelta();
-      //   cube.rotation.x += delta * 0.5; // Rotate at 0.5 radians/sec
-      //   cube.rotation.y += delta * 0.5;
+      cube.rotation.x += delta * 0.5;
+      cube.rotation.y += delta * 0.5;
       controls.update();
       renderer.render(scene, camera);
     };
