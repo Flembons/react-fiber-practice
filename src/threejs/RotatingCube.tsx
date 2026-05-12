@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
-export default function ThreeCanvas() {
+export default function RotatingCube() {
   const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -82,5 +82,5 @@ export default function ThreeCanvas() {
       renderer.dispose();
     };
   }, []);
-  return <div ref={mountRef} style={{ width: "100vw", height: "100vh" }} />;
+  return <div ref={mountRef} style={{ width: "100%", height: "100%" }} />;
 }
