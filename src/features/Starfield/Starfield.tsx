@@ -1,11 +1,12 @@
-import { Canvas } from "@react-three/fiber";
+import { PerspectiveCamera } from "@react-three/drei";
 import StarfieldPoints from "./components/StarfieldPoints";
 
 export default function Starfield() {
   return (
-    <Canvas>
+    <>
       <color attach="background" args={["#000008"]} />
+      <PerspectiveCamera makeDefault position={[0, 0, 1]} fov={75} />
       <StarfieldPoints />
-    </Canvas>
+    </>
   );
 }

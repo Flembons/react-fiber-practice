@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Canvas } from "@react-three/fiber";
 import Header from "./components/Header";
 import RotatingCubeScene from "./features/RotatingCube/RotatingCubeScene";
 import Starfield from "./features/Starfield/Starfield";
@@ -14,23 +15,14 @@ export default function App() {
   const [active, setActive] = useState("rotating-cube");
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh" }}>
+    <div className="flex flex-col h-screen">
       <Header scenes={SCENES} active={active} onSelect={setActive} />
-      <div style={{ flex: 1, overflow: "hidden", position: "relative" }}>
-        {SCENES.map(({ id }) => (
-          <div
-            key={id}
-            style={{
-              position: "absolute",
-              inset: 0,
-              visibility: active === id ? "visible" : "hidden",
-            }}
-          >
-            {id === "rotating-cube" && <RotatingCubeScene />}
-            {id === "starfield" && <Starfield />}
-            {id === "combined" && <CombinedScene />}
-          </div>
-        ))}
+      <div className="flex-1 overflow-hidden">
+        <Canvas>
+          {active === "rotating-cube" && <RotatingCubeScene />}
+          {active === "starfield" && <Starfield />}
+          {active === "combined" && <CombinedScene />}
+        </Canvas>
       </div>
     </div>
   );
