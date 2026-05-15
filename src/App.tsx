@@ -17,13 +17,13 @@ export default function App() {
   return (
     <div className="flex flex-col h-screen">
       <Header scenes={SCENES} active={active} onSelect={setActive} />
-      <div className="flex-1 overflow-hidden">
+      <main className="flex flex-col h-full bg-black">
         <Canvas>
           {active === "rotating-cube" && <RotatingCubeScene />}
           {active === "starfield" && <Starfield />}
           {active === "combined" && <CombinedScene />}
         </Canvas>
-      </div>
+      </main>
     </div>
   );
 }
