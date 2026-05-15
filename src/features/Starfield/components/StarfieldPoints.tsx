@@ -26,7 +26,7 @@ export default function StarfieldPoints() {
 
   useFrame((_, delta) => {
     if (pointsRef.current) {
-      pointsRef.current.rotation.x += delta * 0.02;
+      pointsRef.current.rotation.x += delta * 0.01;
     }
   });
 

@@ -35,8 +35,8 @@ export default function RotatingCube() {
 
   useFrame((_, delta) => {
     if (!meshRef.current) return;
-    meshRef.current.rotation.x += delta * 0.3;
-    meshRef.current.rotation.y += delta * 0.53;
+    meshRef.current.rotation.x += delta * 0.2;
+    meshRef.current.rotation.y += delta * 0.2;
     const key = pressedKeyRef.current;
     if (key) {
       (meshRef.current.material as MeshPhongMaterial).color.lerp(

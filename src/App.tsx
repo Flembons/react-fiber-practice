@@ -4,11 +4,12 @@ import Header from "./components/Header";
 import RotatingCubeScene from "./features/RotatingCube/RotatingCubeScene";
 import Starfield from "./features/Starfield/Starfield";
 import CombinedScene from "./features/Combined/CombinedScene";
+import SolarSystem from "./features/SolarSystem/SolarSystem";
 
 const SCENES = [
   { id: "rotating-cube", label: "Rotating Cube" },
   { id: "starfield", label: "Starfield" },
-  { id: "combined", label: "Combined" },
+  { id: "solar-system", label: "Solar System" },
 ];
 
 export default function App() {
@@ -21,7 +22,7 @@ export default function App() {
         <Canvas>
           {active === "rotating-cube" && <RotatingCubeScene />}
           {active === "starfield" && <Starfield />}
-          {active === "combined" && <CombinedScene />}
+          {active === "solar-system" && <SolarSystem />}
         </Canvas>
       </main>
     </div>
