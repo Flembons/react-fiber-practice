@@ -21,7 +21,7 @@ export default function Header({ scenes, active, onSelect }: HeaderProps) {
             className={`px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors duration-250 ${
               isActive
                 ? "bg-[#ffffff18] text-white"
-                : "bg-none hover:bg-gray-800 text-gray-500"
+                : "bg-none hover:bg-gray-800 hover:text-gray-400 text-gray-500"
             }`}
           >
             {scene.label}

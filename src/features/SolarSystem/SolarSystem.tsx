@@ -1,4 +1,4 @@
-import StarfieldPoints from "../Starfield/components/StarfieldPoints";
+import Stars from "./components/Stars";
 import { PerspectiveCamera, OrbitControls } from "@react-three/drei";
 import Planet from "./components/Planet";
 import Sun from "./components/Sun";
@@ -15,7 +15,7 @@ const PLANETS = [
   {
     name: "Venus",
     color_start: "#e8cda0",
-    color_end: "#5900ff",
+    color_end: "#c8a070",
     distance: 3.5,
     size: 0.18,
     speed: 1.17,
@@ -59,8 +59,8 @@ export default function SolarSystem() {
     <>
       <color attach="background" args={["#000008"]} />
       <PerspectiveCamera makeDefault position={[0, 12, 10]} fov={60} />
-      <ambientLight intensity={1} />
-      <StarfieldPoints />
+      <ambientLight intensity={0.2} />
+      <Stars />
       <Sun />
       {PLANETS.map((planet) => (
         <Planet key={planet.name} {...planet} />

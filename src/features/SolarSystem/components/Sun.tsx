@@ -7,7 +7,7 @@ export default function Sun() {
         emissive={"#ffff00"}
         emissiveIntensity={1}
       />
-      <pointLight color="#fff5e0" intensity={80} distance={60} />
+      <pointLight color="#fff5e0" intensity={100} distance={60} />
     </mesh>
   );
 }
