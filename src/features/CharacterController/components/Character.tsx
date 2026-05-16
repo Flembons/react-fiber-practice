@@ -49,7 +49,15 @@ export default function Character({ orbitRef }: CharacterProps) {
   const vel = useRef(new Vector3());
   const speed = useRef(0);
   const hasDoubleJump = useRef(true);
-  const keys = useRef({ w: false, a: false, s: false, d: false, space: false });
+  const keys = useRef({
+    w: false,
+    a: false,
+    s: false,
+    d: false,
+    space: false,
+    autoRun: false,
+  });
+  const mouseBtns = useRef({ left: false, right: false });
   const spacePrev = useRef(false);
   const prevPlayerPos = useRef(new Vector3(0, 1, 0));
 
@@ -74,6 +82,7 @@ export default function Character({ orbitRef }: CharacterProps) {
         e.preventDefault();
         keys.current.space = true;
       }
+      if (e.code === "KeyF") keys.current.autoRun = true;
     };
     const onUp = (e: KeyboardEvent) => {
       if (e.code === "KeyW") keys.current.w = false;
@@ -81,12 +90,33 @@ export default function Character({ orbitRef }: CharacterProps) {
       if (e.code === "KeyS") keys.current.s = false;
       if (e.code === "KeyD") keys.current.d = false;
       if (e.code === "Space") keys.current.space = false;
+      if (e.code === "KeyF") keys.current.autoRun = false;
     };
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     return () => {
       window.removeEventListener("keydown", onDown);
       window.removeEventListener("keyup", onUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      if (e.button === 0) mouseBtns.current.left = true;
+      if (e.button === 2) mouseBtns.current.right = true;
+    };
+    const onUp = (e: MouseEvent) => {
+      if (e.button === 0) mouseBtns.current.left = false;
+      if (e.button === 2) mouseBtns.current.right = false;
+    };
+    const noCtxMenu = (e: MouseEvent) => e.preventDefault();
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("contextmenu", noCtxMenu);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("contextmenu", noCtxMenu);
     };
   }, []);
 
@@ -136,17 +166,24 @@ export default function Character({ orbitRef }: CharacterProps) {
       .crossVectors(camDir, new Vector3(0, 1, 0))
       .normalize();
 
+    const bothButtons =
+      (mouseBtns.current.left && mouseBtns.current.right) ||
+      keys.current.autoRun;
+    const rightOnly = mouseBtns.current.right && !mouseBtns.current.left;
+
     const inputX = (keys.current.d ? 1 : 0) - (keys.current.a ? 1 : 0);
-    const inputZ = (keys.current.s ? 1 : 0) - (keys.current.w ? 1 : 0);
+    const inputZ =
+      (keys.current.s ? 1 : 0) - (keys.current.w || bothButtons ? 1 : 0);
     const hasInput = inputX !== 0 || inputZ !== 0;
 
-    if (hasInput) {
-      const dir = new Vector3();
-      dir.addScaledVector(camDir, -inputZ);
-      dir.addScaledVector(camRight, inputX);
-      dir.normalize();
+    let moveDir: Vector3 | null = null;
 
-      // Minimum speed on start (matches Godot's `if player.speed < 8.0: player.speed = 8.0`)
+    if (hasInput) {
+      moveDir = new Vector3();
+      moveDir.addScaledVector(camDir, -inputZ);
+      moveDir.addScaledVector(camRight, inputX);
+      moveDir.normalize();
+
       if (speed.current < MIN_START_SPEED) speed.current = MIN_START_SPEED;
       speed.current = moveToward(
         speed.current,
@@ -155,21 +192,25 @@ export default function Character({ orbitRef }: CharacterProps) {
       );
 
       const t = Math.min(ACCELERATION * delta, 1);
-      v.x = MathUtils.lerp(v.x, dir.x * speed.current, t);
-      v.z = MathUtils.lerp(v.z, dir.z * speed.current, t);
+      v.x = MathUtils.lerp(v.x, moveDir.x * speed.current, t);
+      v.z = MathUtils.lerp(v.z, moveDir.z * speed.current, t);
+    } else {
+      speed.current = moveToward(speed.current, 0, SLOW_DOWN * delta);
+      v.x = moveToward(v.x, 0, SLOW_DOWN * delta);
+      v.z = moveToward(v.z, 0, SLOW_DOWN * delta);
+    }
 
-      // Lerp-rotate body to face movement direction (rate ~5/s matches Godot's 0.08/frame at 60fps)
-      if (meshRef.current) {
-        const targetAngle = Math.atan2(dir.x, dir.z);
+    if (meshRef.current) {
+      if (rightOnly) {
+        // Right mouse only: instantly snap to face the camera's forward direction
+        meshRef.current.rotation.y = Math.atan2(camDir.x, camDir.z);
+      } else if (moveDir) {
+        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
         let diff = targetAngle - meshRef.current.rotation.y;
         while (diff > Math.PI) diff -= Math.PI * 2;
         while (diff < -Math.PI) diff += Math.PI * 2;
         meshRef.current.rotation.y += diff * Math.min(5 * delta, 1);
       }
-    } else {
-      speed.current = moveToward(speed.current, 0, SLOW_DOWN * delta);
-      v.x = moveToward(v.x, 0, SLOW_DOWN * delta);
-      v.z = moveToward(v.z, 0, SLOW_DOWN * delta);
     }
 
     // Compute collision-resolved displacement and apply
