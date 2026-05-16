@@ -5,7 +5,7 @@ import SolarSystem from "./features/SolarSystem/SolarSystem";
 import WaveGrid from "./features/WaveGrid/WaveGrid";
 import PhysicsScene from "./features/Physics/PhysicsScene";
 
-const DURATION = 200;
+const FADE_DURATION = 200;
 const STORAGE_KEY = "active-scene";
 const DEFAULT_SCENE = "rotating-cube";
 
@@ -36,7 +36,7 @@ export default function App() {
       setDisplayed(id);
       setLeaving(false);
       localStorage.setItem(STORAGE_KEY, id);
-    }, DURATION);
+    }, FADE_DURATION);
   };
 
   return (
