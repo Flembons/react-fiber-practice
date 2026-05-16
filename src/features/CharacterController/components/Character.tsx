@@ -8,12 +8,19 @@ import {
   type RapierRigidBody,
 } from "@react-three/rapier";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { MathUtils, Vector3 } from "three";
+import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 import type { Group } from "three";
 
 interface CharacterProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
 }
+
+// Speed of rotation when changing direction
+const ROTATION_SPEED = 8.0;
+// Speed of tilt when aligning to slopes
+const TILT_SPEED = 8.0;
+// Minimum angle change (radians) before tilt updates — suppresses micro-jitter
+const TILT_THRESHOLD = 0.005;
 
 // Jump parameters
 const JUMP_PEAK_TIME = 0.5;
@@ -38,7 +45,7 @@ function moveToward(current: number, target: number, maxStep: number): number {
 }
 
 export default function Character({ orbitRef }: CharacterProps) {
-  const { world } = useRapier();
+  const { world, rapier } = useRapier();
   type KCC = ReturnType<typeof world.createCharacterController>;
 
   const rbRef = useRef<RapierRigidBody>(null);
@@ -60,6 +67,7 @@ export default function Character({ orbitRef }: CharacterProps) {
   const mouseBtns = useRef({ left: false, right: false });
   const spacePrev = useRef(false);
   const prevPlayerPos = useRef(new Vector3(0, 1, 0));
+  const yaw = useRef(0);
 
   useEffect(() => {
     const ctrl = world.createCharacterController(0.01);
@@ -200,17 +208,14 @@ export default function Character({ orbitRef }: CharacterProps) {
       v.z = moveToward(v.z, 0, SLOW_DOWN * delta);
     }
 
-    if (meshRef.current) {
-      if (rightOnly) {
-        // Right mouse only: instantly snap to face the camera's forward direction
-        meshRef.current.rotation.y = Math.atan2(camDir.x, camDir.z);
-      } else if (moveDir) {
-        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-        let diff = targetAngle - meshRef.current.rotation.y;
-        while (diff > Math.PI) diff -= Math.PI * 2;
-        while (diff < -Math.PI) diff += Math.PI * 2;
-        meshRef.current.rotation.y += diff * Math.min(5 * delta, 1);
-      }
+    if (rightOnly) {
+      yaw.current = Math.atan2(camDir.x, camDir.z);
+    } else if (moveDir) {
+      const targetAngle = Math.atan2(moveDir.x, moveDir.z);
+      let diff = targetAngle - yaw.current;
+      while (diff > Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      yaw.current += diff * Math.min(ROTATION_SPEED * delta, 1);
     }
 
     // Compute collision-resolved displacement and apply
@@ -225,6 +230,42 @@ export default function Character({ orbitRef }: CharacterProps) {
       z: pos.z + corrected.z,
     };
     rbRef.current.setNextKinematicTranslation(newPos);
+
+    // Raycast straight down to get the surface normal under the character.
+    const ray = new rapier.Ray(newPos, { x: 0, y: -1, z: 0 });
+    const hit = world.castRayAndGetNormal(
+      ray,
+      1.2,
+      true,
+      undefined,
+      undefined,
+      undefined,
+      rbRef.current ?? undefined,
+    );
+    if (meshRef.current) {
+      const worldUp = new Vector3(0, 1, 0);
+      const forward = new Vector3(Math.sin(yaw.current), 0, Math.cos(yaw.current));
+      let targetQuat: Quaternion;
+
+      if (hit && hit.normal.y > 0.7) {
+        // Port of Godot's align_with_floor:
+        //   basis.y = floor_normal
+        //   basis.x = -(basis.z × floor_normal)  →  up × forward (Three.js +Z forward)
+        //   basis.orthonormalized()               →  newForward = right × up
+        const up = new Vector3(hit.normal.x, hit.normal.y, hit.normal.z);
+        const right = new Vector3().crossVectors(up, forward).normalize();
+        const newForward = new Vector3().crossVectors(right, up).normalize();
+        targetQuat = new Quaternion().setFromRotationMatrix(
+          new Matrix4().makeBasis(right, up, newForward),
+        );
+      } else {
+        targetQuat = new Quaternion().setFromAxisAngle(worldUp, yaw.current);
+      }
+
+      if (meshRef.current.quaternion.angleTo(targetQuat) > TILT_THRESHOLD) {
+        meshRef.current.quaternion.slerp(targetQuat, Math.min(TILT_SPEED * delta, 1));
+      }
+    }
 
     // Drive the visual directly to newPos so it matches the camera target
     // in the same frame, eliminating the one-frame Rapier-sync lag.
@@ -265,6 +306,14 @@ export default function Character({ orbitRef }: CharacterProps) {
           <mesh position={[0, 0.3, 0.35]}>
             <sphereGeometry args={[0.1, 8, 8]} />
             <meshStandardMaterial color="#ff6b6b" />
+          </mesh>
+          <mesh position={[-0.1, 0.5, 0.3]}>
+            <sphereGeometry args={[0.05, 1, 4]} />
+            <meshStandardMaterial color="#efebeb" />
+          </mesh>
+          <mesh position={[0.1, 0.5, 0.3]}>
+            <sphereGeometry args={[0.05, 1, 4]} />
+            <meshStandardMaterial color="#efebeb" />
           </mesh>
         </group>
       </group>
