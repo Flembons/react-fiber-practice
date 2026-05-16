@@ -7,9 +7,10 @@ interface HeaderProps {
   scenes: Scene[];
   active: string;
   onSelect: (id: string) => void;
+  rightContent?: React.ReactNode;
 }
 
-export default function Header({ scenes, active, onSelect }: HeaderProps) {
+export default function Header({ scenes, active, onSelect, rightContent }: HeaderProps) {
   return (
     <header className="flex items-center px-4 py-3 gap-4 bg-[#0f0f1a] border-b border-[#ffffff18]">
       {scenes.map((scene) => {
@@ -28,6 +29,7 @@ export default function Header({ scenes, active, onSelect }: HeaderProps) {
           </button>
         );
       })}
+      {rightContent && <div className="ml-auto">{rightContent}</div>}
     </header>
   );
 }

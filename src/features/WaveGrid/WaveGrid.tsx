@@ -18,8 +18,11 @@ export default function WaveGrid() {
   };
 
   return (
-    <div className="w-full h-full relative">
-      <Canvas>
+    <div className="w-full h-full relative bg-[#0a0a1a]">
+      <Canvas
+        gl={{ alpha: false }}
+        onCreated={({ gl }) => gl.setClearColor("#0a0a1a", 1)}
+      >
         <color attach="background" args={["#0a0a1a"]} />
         <PerspectiveCamera makeDefault position={[0, 10, 15]} fov={60} />
         <ambientLight intensity={1} />

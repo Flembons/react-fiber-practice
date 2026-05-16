@@ -28,7 +28,7 @@ export default function WaveControls({
   const values = { amplitude, frequency, speed };
 
   return (
-    <div className="absolute top-4 right-4 z-50 bg-blue-950/80 border border-blue-400/80 backdrop-blur-sm text-white p-4 rounded-lg flex flex-col gap-3 min-w-60">
+    <div className="absolute top-4 right-4 z-50 bg-blue-950 border border-blue-400/80 text-white p-4 rounded-lg flex flex-col gap-3 min-w-60">
       <p className="text-xs font-semibold text-white/60 uppercase tracking-wider">
         Wave Controls
       </p>

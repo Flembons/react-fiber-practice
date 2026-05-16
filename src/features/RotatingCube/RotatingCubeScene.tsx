@@ -5,7 +5,7 @@ import RotatingCube from "./components/RotatingCube";
 export default function RotatingCubeScene() {
   return (
     <Canvas>
-      <color attach="background" args={["#000008"]} />
+      <color attach="background" args={["#0a0a1a"]} />
       <PerspectiveCamera makeDefault position={[0, 0, 2]} fov={90} />
       <ambientLight intensity={0.7} />
       <directionalLight intensity={1} position={[0, 0, 5]} />

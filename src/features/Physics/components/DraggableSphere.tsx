@@ -1,6 +1,6 @@
 import Draggable from "../../../components/Draggable";
 
-export default function DraggableCube() {
+export default function DraggableSphere() {
   return (
     <Draggable position={[0, 2, 0]} colliders="ball" restitution={0.6}>
       <mesh castShadow>
