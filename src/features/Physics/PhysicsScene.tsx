@@ -12,7 +12,7 @@ export default function PhysicsScene({ resetKey }: { resetKey?: number }) {
   const orbitRef = useRef<OrbitControlsImpl | null>(null);
 
   return (
-    <Canvas camera={{ position: [0, 15, 50], fov: 75 }} shadows>
+    <Canvas camera={{ position: [0, 15, 50], fov: 75 }} shadows="percentage">
       <color attach="background" args={["#0a0a1a"]} />
       <ambientLight intensity={0.8} />
       <directionalLight intensity={1.2} position={[5, 10, 5]} castShadow />

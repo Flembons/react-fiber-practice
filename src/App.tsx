@@ -4,6 +4,7 @@ import RotatingCubeScene from "./features/RotatingCube/RotatingCubeScene";
 import SolarSystem from "./features/SolarSystem/SolarSystem";
 import WaveGrid from "./features/WaveGrid/WaveGrid";
 import PhysicsScene from "./features/Physics/PhysicsScene";
+import CharacterControllerScene from "./features/CharacterController/CharacterControllerScene";
 
 const FADE_DURATION = 200;
 const STORAGE_KEY = "active-scene";
@@ -19,6 +20,7 @@ const SCENES = [
   { id: "solar-system", label: "Solar System" },
   { id: "wave-grid", label: "Wave Grid" },
   { id: "physics-scene", label: "Physics" },
+  { id: "character-controller", label: "Character Controller" },
 ];
 
 export default function App() {
@@ -67,6 +69,7 @@ export default function App() {
           {displayed === "physics-scene" && (
             <PhysicsScene resetKey={physicsResetKey} />
           )}
+          {displayed === "character-controller" && <CharacterControllerScene />}
         </div>
       </main>
     </div>
