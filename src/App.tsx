@@ -3,6 +3,7 @@ import Header from "./components/Header";
 import RotatingCubeScene from "./features/RotatingCube/RotatingCubeScene";
 import SolarSystem from "./features/SolarSystem/SolarSystem";
 import WaveGrid from "./features/WaveGrid/WaveGrid";
+import PhysicsScene from "./features/Physics/PhysicsScene";
 
 const DURATION = 200;
 
@@ -10,6 +11,7 @@ const SCENES = [
   { id: "rotating-cube", label: "Rotating Cube" },
   { id: "solar-system", label: "Solar System" },
   { id: "wave-grid", label: "Wave Grid" },
+  { id: "physics-scene", label: "Physics" },
 ];
 
 export default function App() {
@@ -39,6 +41,7 @@ export default function App() {
           {displayed === "rotating-cube" && <RotatingCubeScene />}
           {displayed === "solar-system" && <SolarSystem />}
           {displayed === "wave-grid" && <WaveGrid />}
+          {displayed === "physics-scene" && <PhysicsScene />}
         </div>
       </main>
     </div>
