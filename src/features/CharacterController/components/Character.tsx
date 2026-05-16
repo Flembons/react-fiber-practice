@@ -8,16 +8,34 @@ import {
   type RapierRigidBody,
 } from "@react-three/rapier";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Vector3 } from "three";
+import { MathUtils, Vector3 } from "three";
 import type { Mesh } from "three";
 
 interface CharacterProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
 }
 
-const SPEED = 6;
-const JUMP_FORCE = 8;
-const GRAVITY = -20;
+// Jump parameters
+const JUMP_PEAK_TIME = 0.5;
+const JUMP_FALL_TIME = 0.45;
+const JUMP_HEIGHT = 3.0;
+
+// Kinematic equations for jumping
+const PLAYER_GRAVITY = (2.0 * JUMP_HEIGHT) / JUMP_PEAK_TIME ** 2; // 24 m/s²
+const FALL_GRAVITY = (2.0 * JUMP_HEIGHT) / JUMP_FALL_TIME ** 2; // ~29.6 m/s²
+const JUMP_VELOCITY = PLAYER_GRAVITY * JUMP_PEAK_TIME; // 12 m/s
+
+// Movement parameters
+const ACCELERATION = 8.0;
+const MAX_SPEED = 25.0;
+const SLOW_DOWN = 70.0;
+const MIN_START_SPEED = 8.0;
+
+function moveToward(current: number, target: number, maxStep: number): number {
+  const diff = target - current;
+  if (Math.abs(diff) <= maxStep) return target;
+  return current + Math.sign(diff) * maxStep;
+}
 
 export default function Character({ orbitRef }: CharacterProps) {
   const { world } = useRapier();
@@ -26,10 +44,14 @@ export default function Character({ orbitRef }: CharacterProps) {
   const rbRef = useRef<RapierRigidBody>(null);
   const meshRef = useRef<Mesh>(null);
   const controllerRef = useRef<KCC | null>(null);
-  const yVelRef = useRef(0);
-  const keys = useRef({ w: false, a: false, s: false, d: false, space: false });
 
-  // Setup character controller
+  const vel = useRef(new Vector3());
+  const speed = useRef(0);
+  const hasDoubleJump = useRef(true);
+  const keys = useRef({ w: false, a: false, s: false, d: false, space: false });
+  const spacePrev = useRef(false);
+  const prevPlayerPos = useRef(new Vector3(0, 1, 0));
+
   useEffect(() => {
     const ctrl = world.createCharacterController(0.01);
     ctrl.setMaxSlopeClimbAngle((45 * Math.PI) / 180);
@@ -38,9 +60,7 @@ export default function Character({ orbitRef }: CharacterProps) {
     ctrl.enableSnapToGround(0.5);
     ctrl.setSlideEnabled(true);
     controllerRef.current = ctrl;
-    return () => {
-      world.removeCharacterController(ctrl);
-    };
+    return () => world.removeCharacterController(ctrl);
   }, [world]);
 
   useEffect(() => {
@@ -61,7 +81,6 @@ export default function Character({ orbitRef }: CharacterProps) {
       if (e.code === "KeyD") keys.current.d = false;
       if (e.code === "Space") keys.current.space = false;
     };
-
     window.addEventListener("keydown", onDown);
     window.addEventListener("keyup", onUp);
     return () => {
@@ -73,7 +92,41 @@ export default function Character({ orbitRef }: CharacterProps) {
   useFrame(({ camera }, delta) => {
     if (!rbRef.current || !controllerRef.current) return;
 
-    // 1. Camera-relative movement directions
+    const v = vel.current;
+    const grounded = controllerRef.current.computedGrounded();
+
+    // Gravity: stronger on the way down, matching Godot's split gravity
+    if (!grounded) {
+      const gravity = v.y > 0 ? PLAYER_GRAVITY : FALL_GRAVITY;
+      v.y -= gravity * delta;
+    } else if (v.y < 0) {
+      v.y = 0;
+    }
+
+    // Jump edge detection
+    const spaceDown = keys.current.space;
+    const justPressed = spaceDown && !spacePrev.current;
+    const justReleased = !spaceDown && spacePrev.current;
+    spacePrev.current = spaceDown;
+
+    // Jump cut: releasing space early while ascending cuts velocity (Godot _input)
+    if (justReleased && v.y > 0) {
+      v.y *= 0.4;
+    }
+
+    if (justPressed) {
+      if (grounded) {
+        v.y = JUMP_VELOCITY;
+      } else if (hasDoubleJump.current) {
+        v.y = JUMP_VELOCITY;
+        hasDoubleJump.current = false;
+      }
+    }
+
+    // Reset double jump when touching ground
+    if (grounded) hasDoubleJump.current = true;
+
+    // Camera-relative movement direction
     const camDir = new Vector3();
     camera.getWorldDirection(camDir);
     camDir.y = 0;
@@ -82,30 +135,46 @@ export default function Character({ orbitRef }: CharacterProps) {
       .crossVectors(camDir, new Vector3(0, 1, 0))
       .normalize();
 
-    // 2. Build WASD movement
-    const moveDir = new Vector3();
-    if (keys.current.w) moveDir.addScaledVector(camDir, SPEED * delta);
-    if (keys.current.s) moveDir.addScaledVector(camDir, -SPEED * delta);
-    if (keys.current.a) moveDir.addScaledVector(camRight, -SPEED * delta);
-    if (keys.current.d) moveDir.addScaledVector(camRight, SPEED * delta);
+    const inputX = (keys.current.d ? 1 : 0) - (keys.current.a ? 1 : 0);
+    const inputZ = (keys.current.s ? 1 : 0) - (keys.current.w ? 1 : 0);
+    const hasInput = inputX !== 0 || inputZ !== 0;
 
-    // 3. Jumping + gravity
-    const grounded = controllerRef.current.computedGrounded();
-    if (keys.current.space && grounded) {
-      yVelRef.current = JUMP_FORCE;
-      keys.current.space = false; // consume so jump doesn't retrigger
-    }
-    if (!grounded) {
-      yVelRef.current += GRAVITY * delta; // apply gravity over time
+    if (hasInput) {
+      const dir = new Vector3();
+      dir.addScaledVector(camDir, -inputZ);
+      dir.addScaledVector(camRight, inputX);
+      dir.normalize();
+
+      // Minimum speed on start (matches Godot's `if player.speed < 8.0: player.speed = 8.0`)
+      if (speed.current < MIN_START_SPEED) speed.current = MIN_START_SPEED;
+      speed.current = moveToward(
+        speed.current,
+        MAX_SPEED,
+        ACCELERATION * delta,
+      );
+
+      const t = Math.min(ACCELERATION * delta, 1);
+      v.x = MathUtils.lerp(v.x, dir.x * speed.current, t);
+      v.z = MathUtils.lerp(v.z, dir.z * speed.current, t);
+
+      // Lerp-rotate body to face movement direction (rate ~5/s matches Godot's 0.08/frame at 60fps)
+      if (meshRef.current) {
+        const targetAngle = Math.atan2(dir.x, dir.z);
+        let diff = targetAngle - meshRef.current.rotation.y;
+        while (diff > Math.PI) diff -= Math.PI * 2;
+        while (diff < -Math.PI) diff += Math.PI * 2;
+        meshRef.current.rotation.y += diff * Math.min(5 * delta, 1);
+      }
     } else {
-      yVelRef.current = Math.max(yVelRef.current, -1);
+      speed.current = moveToward(speed.current, 0, SLOW_DOWN * delta);
+      v.x = moveToward(v.x, 0, SLOW_DOWN * delta);
+      v.z = moveToward(v.z, 0, SLOW_DOWN * delta);
     }
 
-    moveDir.y = yVelRef.current * delta;
-
-    // 4. Compute + apply collision-resolved movement
+    // Compute collision-resolved displacement and apply
+    const displacement = new Vector3(v.x * delta, v.y * delta, v.z * delta);
     const collider = rbRef.current.collider(0);
-    controllerRef.current.computeColliderMovement(collider, moveDir);
+    controllerRef.current.computeColliderMovement(collider, displacement);
     const corrected = controllerRef.current.computedMovement();
     const pos = rbRef.current.translation();
     const newPos = {
@@ -115,26 +184,20 @@ export default function Character({ orbitRef }: CharacterProps) {
     };
     rbRef.current.setNextKinematicTranslation(newPos);
 
-    // 5. Rotate character to face movement direction
-    const horizontal = new Vector3(moveDir.x, 0, moveDir.z);
-    if (horizontal.length() > 0.001 && meshRef.current) {
-      const angle = Math.atan2(horizontal.x, horizontal.z);
-      let delta = angle - meshRef.current.rotation.y;
-      // Normalize to [-π, π] so we always take the shortest arc
-      while (delta > Math.PI) delta -= Math.PI * 2;
-      while (delta < -Math.PI) delta += Math.PI * 2;
-      meshRef.current.rotation.y += delta * 0.1;
-    }
+    // Translate both camera and target by the player's movement delta.
+    // This keeps the spherical offset (camera - target) unchanged each frame,
+    // so OrbitControls never rotates to "re-acquire" the player — it only
+    // rotates in response to mouse input.
+    const playerPos = new Vector3(newPos.x, newPos.y + 1.0, newPos.z);
+    const playerDelta = playerPos.clone().sub(prevPlayerPos.current);
+    prevPlayerPos.current.copy(playerPos);
 
-    // 6. Update OrbitControls target to follow character
-    // Use newPos (predicted position after physics step) so the camera
-    // target matches where the mesh will actually render this frame.
-    // Calling update() immediately ensures ordering doesn't matter.
     if (orbitRef.current) {
-      orbitRef.current.target.set(newPos.x, newPos.y + 1, newPos.z);
-      orbitRef.current.update();
+      orbitRef.current.target.add(playerDelta);
+      camera.position.add(playerDelta);
     }
-  });
+  }, -1);
+
   return (
     <RigidBody
       ref={rbRef}
@@ -142,13 +205,12 @@ export default function Character({ orbitRef }: CharacterProps) {
       colliders={false}
       position={[0, 2, 0]}
     >
-      <CapsuleCollider args={[0.4, 0.35]} /> {/* half-height, radius */}
+      <CapsuleCollider args={[0.4, 0.35]} />
       <group ref={meshRef}>
         <mesh castShadow position={[0, 0, 0]}>
           <capsuleGeometry args={[0.35, 0.8, 4, 8]} />
           <meshStandardMaterial color="#60cfa8" roughness={0.8} />
         </mesh>
-        {/* "face" indicator so rotation is visible */}
         <mesh position={[0, 0.3, 0.35]}>
           <sphereGeometry args={[0.1, 8, 8]} />
           <meshStandardMaterial color="#ff6b6b" />

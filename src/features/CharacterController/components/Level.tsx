@@ -7,7 +7,7 @@ export default function Level() {
       <RigidBody type="fixed" friction={1}>
         <mesh receiveShadow position={[0, -0.2, 0]}>
           <boxGeometry args={[50, 0.4, 50]} />
-          <meshStandardMaterial color="#1a1a2e" />
+          <meshStandardMaterial color="#386449" />
         </mesh>
       </RigidBody>
 
