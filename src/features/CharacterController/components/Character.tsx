@@ -9,7 +9,7 @@ import {
 } from "@react-three/rapier";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { MathUtils, Vector3 } from "three";
-import type { Mesh } from "three";
+import type { Group } from "three";
 
 interface CharacterProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
@@ -26,8 +26,8 @@ const FALL_GRAVITY = (2.0 * JUMP_HEIGHT) / JUMP_FALL_TIME ** 2; // ~29.6 m/s²
 const JUMP_VELOCITY = PLAYER_GRAVITY * JUMP_PEAK_TIME; // 12 m/s
 
 // Movement parameters
-const ACCELERATION = 8.0;
-const MAX_SPEED = 25.0;
+const ACCELERATION = 5.0;
+const MAX_SPEED = 15.0;
 const SLOW_DOWN = 70.0;
 const MIN_START_SPEED = 8.0;
 
@@ -42,7 +42,8 @@ export default function Character({ orbitRef }: CharacterProps) {
   type KCC = ReturnType<typeof world.createCharacterController>;
 
   const rbRef = useRef<RapierRigidBody>(null);
-  const meshRef = useRef<Mesh>(null);
+  const visualRef = useRef<Group>(null);
+  const meshRef = useRef<Group>(null);
   const controllerRef = useRef<KCC | null>(null);
 
   const vel = useRef(new Vector3());
@@ -184,6 +185,12 @@ export default function Character({ orbitRef }: CharacterProps) {
     };
     rbRef.current.setNextKinematicTranslation(newPos);
 
+    // Drive the visual directly to newPos so it matches the camera target
+    // in the same frame, eliminating the one-frame Rapier-sync lag.
+    if (visualRef.current) {
+      visualRef.current.position.set(newPos.x, newPos.y, newPos.z);
+    }
+
     // Translate both camera and target by the player's movement delta.
     // This keeps the spherical offset (camera - target) unchanged each frame,
     // so OrbitControls never rotates to "re-acquire" the player — it only
@@ -196,26 +203,30 @@ export default function Character({ orbitRef }: CharacterProps) {
       orbitRef.current.target.add(playerDelta);
       camera.position.add(playerDelta);
     }
-  }, -1);
+  });
 
   return (
-    <RigidBody
-      ref={rbRef}
-      type="kinematicPosition"
-      colliders={false}
-      position={[0, 2, 0]}
-    >
-      <CapsuleCollider args={[0.4, 0.35]} />
-      <group ref={meshRef}>
-        <mesh castShadow position={[0, 0, 0]}>
-          <capsuleGeometry args={[0.35, 0.8, 4, 8]} />
-          <meshStandardMaterial color="#60cfa8" roughness={0.8} />
-        </mesh>
-        <mesh position={[0, 0.3, 0.35]}>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshStandardMaterial color="#ff6b6b" />
-        </mesh>
+    <>
+      <RigidBody
+        ref={rbRef}
+        type="kinematicPosition"
+        colliders={false}
+        position={[0, 2, 0]}
+      >
+        <CapsuleCollider args={[0.4, 0.35]} />
+      </RigidBody>
+      <group ref={visualRef} position={[0, 2, 0]}>
+        <group ref={meshRef}>
+          <mesh castShadow>
+            <capsuleGeometry args={[0.35, 0.8, 4, 8]} />
+            <meshStandardMaterial color="#60cfa8" roughness={0.8} />
+          </mesh>
+          <mesh position={[0, 0.3, 0.35]}>
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <meshStandardMaterial color="#ff6b6b" />
+          </mesh>
+        </group>
       </group>
-    </RigidBody>
+    </>
   );
 }
