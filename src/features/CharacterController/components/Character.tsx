@@ -10,6 +10,7 @@ import {
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import { MathUtils, Matrix4, Quaternion, Vector3 } from "three";
 import type { Group } from "three";
+import { useKeyboardControls } from "@react-three/drei";
 
 interface CharacterProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
@@ -53,19 +54,13 @@ export default function Character({ orbitRef }: CharacterProps) {
   const meshRef = useRef<Group>(null);
   const controllerRef = useRef<KCC | null>(null);
 
+  const [, getKeys] = useKeyboardControls();
+
   const vel = useRef(new Vector3());
   const speed = useRef(0);
   const hasDoubleJump = useRef(true);
-  const keys = useRef({
-    w: false,
-    a: false,
-    s: false,
-    d: false,
-    space: false,
-    autoRun: false,
-  });
   const mouseBtns = useRef({ left: false, right: false });
-  const spacePrev = useRef(false);
+  const jumpPrev = useRef(false);
   const prevPlayerPos = useRef(new Vector3(0, 1, 0));
   const yaw = useRef(0);
 
@@ -74,39 +69,10 @@ export default function Character({ orbitRef }: CharacterProps) {
     ctrl.setMaxSlopeClimbAngle((45 * Math.PI) / 180);
     ctrl.setMinSlopeSlideAngle((30 * Math.PI) / 180);
     ctrl.enableAutostep(0.5, 0.2, true);
-    ctrl.enableSnapToGround(0.5);
     ctrl.setSlideEnabled(true);
     controllerRef.current = ctrl;
     return () => world.removeCharacterController(ctrl);
   }, [world]);
-
-  useEffect(() => {
-    const onDown = (e: KeyboardEvent) => {
-      if (e.code === "KeyW") keys.current.w = true;
-      if (e.code === "KeyA") keys.current.a = true;
-      if (e.code === "KeyS") keys.current.s = true;
-      if (e.code === "KeyD") keys.current.d = true;
-      if (e.code === "Space") {
-        e.preventDefault();
-        keys.current.space = true;
-      }
-      if (e.code === "KeyF") keys.current.autoRun = true;
-    };
-    const onUp = (e: KeyboardEvent) => {
-      if (e.code === "KeyW") keys.current.w = false;
-      if (e.code === "KeyA") keys.current.a = false;
-      if (e.code === "KeyS") keys.current.s = false;
-      if (e.code === "KeyD") keys.current.d = false;
-      if (e.code === "Space") keys.current.space = false;
-      if (e.code === "KeyF") keys.current.autoRun = false;
-    };
-    window.addEventListener("keydown", onDown);
-    window.addEventListener("keyup", onUp);
-    return () => {
-      window.removeEventListener("keydown", onDown);
-      window.removeEventListener("keyup", onUp);
-    };
-  }, []);
 
   useEffect(() => {
     const onDown = (e: MouseEvent) => {
@@ -131,22 +97,29 @@ export default function Character({ orbitRef }: CharacterProps) {
   useFrame(({ camera }, delta) => {
     if (!rbRef.current || !controllerRef.current) return;
 
+    const {
+      forward: keyForward,
+      backward,
+      left: keyLeft,
+      right: keyRight,
+      jump,
+      autoRun,
+    } = getKeys();
+
     const v = vel.current;
     const grounded = controllerRef.current.computedGrounded();
 
-    // Gravity: stronger on the way down, matching Godot's split gravity
     if (!grounded) {
       const gravity = v.y > 0 ? PLAYER_GRAVITY : FALL_GRAVITY;
       v.y -= gravity * delta;
-    } else if (v.y < 0) {
+    } else {
       v.y = 0;
     }
 
     // Jump edge detection
-    const spaceDown = keys.current.space;
-    const justPressed = spaceDown && !spacePrev.current;
-    const justReleased = !spaceDown && spacePrev.current;
-    spacePrev.current = spaceDown;
+    const justPressed = jump && !jumpPrev.current;
+    const justReleased = !jump && jumpPrev.current;
+    jumpPrev.current = jump;
 
     // Jump cut: releasing space early while ascending cuts velocity (Godot _input)
     if (justReleased && v.y > 0) {
@@ -175,13 +148,11 @@ export default function Character({ orbitRef }: CharacterProps) {
       .normalize();
 
     const bothButtons =
-      (mouseBtns.current.left && mouseBtns.current.right) ||
-      keys.current.autoRun;
+      (mouseBtns.current.left && mouseBtns.current.right) || autoRun;
     const rightOnly = mouseBtns.current.right && !mouseBtns.current.left;
 
-    const inputX = (keys.current.d ? 1 : 0) - (keys.current.a ? 1 : 0);
-    const inputZ =
-      (keys.current.s ? 1 : 0) - (keys.current.w || bothButtons ? 1 : 0);
+    const inputX = (keyRight ? 1 : 0) - (keyLeft ? 1 : 0);
+    const inputZ = (backward ? 1 : 0) - (keyForward || bothButtons ? 1 : 0);
     const hasInput = inputX !== 0 || inputZ !== 0;
 
     let moveDir: Vector3 | null = null;
@@ -244,7 +215,11 @@ export default function Character({ orbitRef }: CharacterProps) {
     );
     if (meshRef.current) {
       const worldUp = new Vector3(0, 1, 0);
-      const forward = new Vector3(Math.sin(yaw.current), 0, Math.cos(yaw.current));
+      const forward = new Vector3(
+        Math.sin(yaw.current),
+        0,
+        Math.cos(yaw.current),
+      );
       let targetQuat: Quaternion;
 
       if (hit && hit.normal.y > 0.7) {
@@ -263,7 +238,10 @@ export default function Character({ orbitRef }: CharacterProps) {
       }
 
       if (meshRef.current.quaternion.angleTo(targetQuat) > TILT_THRESHOLD) {
-        meshRef.current.quaternion.slerp(targetQuat, Math.min(TILT_SPEED * delta, 1));
+        meshRef.current.quaternion.slerp(
+          targetQuat,
+          Math.min(TILT_SPEED * delta, 1),
+        );
       }
     }
 
