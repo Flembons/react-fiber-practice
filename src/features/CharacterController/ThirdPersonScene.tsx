@@ -29,7 +29,7 @@ export default function ThirdPersonScene() {
           castShadow
         />
         <Suspense fallback={null}>
-          <Physics gravity={[0, -20, 0]}>
+          <Physics gravity={[0, 0, 0]}>
             <Level />
             <CharacterController orbitRef={orbitRef} />
           </Physics>

@@ -17,13 +17,20 @@ interface CharacterControllerProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
 }
 
-const SPEED = 8.0;
-const JUMP_FORCE = 8.0;
+const MAX_SPEED = 8.0;
+const ACCELERATION = 12.0;
+const DECELERATION = 8.0;
 const ROTATION_SPEED = 8.0;
-const ACCEL_FACTOR = 12.0;
-const DECEL_FACTOR = 8.0;
 const CAMERA_TARGET_OFFSET = 0.35;
 const ALIGN_SPEED = 7.0;
+
+const JUMP_HEIGHT = 2.0;
+const TIME_TO_PEAK = 0.5;
+const TIME_TO_FALL = 0.4;
+
+const JUMP_VELOCITY = (2 * JUMP_HEIGHT) / TIME_TO_PEAK;
+const GRAVITY_UP = (2 * JUMP_HEIGHT) / (TIME_TO_PEAK * TIME_TO_PEAK);
+const GRAVITY_DOWN = (2 * JUMP_HEIGHT) / (TIME_TO_FALL * TIME_TO_FALL);
 
 export default function CharacterController({
   orbitRef,
@@ -75,9 +82,9 @@ export default function CharacterController({
     if (hasInput) moveDirection.normalize();
 
     // Momentum-based velocity: lerp toward target instead of snapping
-    const targetX = moveDirection.x * SPEED;
-    const targetZ = moveDirection.z * SPEED;
-    const lerpRate = hasInput ? ACCEL_FACTOR : DECEL_FACTOR;
+    const targetX = moveDirection.x * MAX_SPEED;
+    const targetZ = moveDirection.z * MAX_SPEED;
+    const lerpRate = hasInput ? ACCELERATION : DECELERATION;
     const t = Math.min(lerpRate * delta, 1);
     const newVx = currentVelocity.x + (targetX - currentVelocity.x) * t;
     const newVz = currentVelocity.z + (targetZ - currentVelocity.z) * t;
@@ -85,8 +92,16 @@ export default function CharacterController({
     // Jump (edge-detect so holding space doesn't re-trigger)
     const justPressed = jump && !jumpPrev.current;
     jumpPrev.current = jump;
-    const newVy =
-      justPressed && isGrounded.current ? JUMP_FORCE : currentVelocity.y;
+    let newVy: number;
+    if (justPressed && isGrounded.current) {
+      console.log("Jump!");
+      newVy = JUMP_VELOCITY;
+    } else if (isGrounded.current && currentVelocity.y <= 0) {
+      newVy = 0;
+    } else {
+      const gravity = currentVelocity.y > 0 ? GRAVITY_UP : GRAVITY_DOWN;
+      newVy = currentVelocity.y - gravity * delta;
+    }
 
     rbRef.current.setLinvel({ x: newVx, y: newVy, z: newVz }, true);
 
