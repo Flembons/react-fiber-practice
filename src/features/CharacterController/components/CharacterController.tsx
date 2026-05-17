@@ -94,7 +94,6 @@ export default function CharacterController({
     jumpPrev.current = jump;
     let newVy: number;
     if (justPressed && isGrounded.current) {
-      console.log("Jump!");
       newVy = JUMP_VELOCITY;
     } else if (isGrounded.current && currentVelocity.y <= 0) {
       newVy = 0;
