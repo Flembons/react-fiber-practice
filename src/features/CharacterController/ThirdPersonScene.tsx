@@ -5,7 +5,7 @@ import { Canvas } from "@react-three/fiber";
 import { Physics } from "@react-three/rapier";
 import { MOUSE } from "three";
 import Level from "./components/Level";
-import Character from "./components/Character";
+import CharacterController from "./components/CharacterController";
 
 const CONTROLS = [
   { name: "forward", keys: ["ArrowUp", "KeyW"] },
@@ -13,10 +13,9 @@ const CONTROLS = [
   { name: "left", keys: ["ArrowLeft", "KeyA"] },
   { name: "right", keys: ["ArrowRight", "KeyD"] },
   { name: "jump", keys: ["Space"] },
-  { name: "autoRun", keys: ["KeyF"] },
 ];
 
-export default function CharacterControllerScene() {
+export default function ThirdPersonScene() {
   const orbitRef = useRef<OrbitControlsImpl>(null);
 
   return (
@@ -32,7 +31,7 @@ export default function CharacterControllerScene() {
         <Suspense fallback={null}>
           <Physics gravity={[0, -20, 0]}>
             <Level />
-            <Character orbitRef={orbitRef} />
+            <CharacterController orbitRef={orbitRef} />
           </Physics>
         </Suspense>
         <OrbitControls
