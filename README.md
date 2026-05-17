@@ -1,73 +1,43 @@
-# React + TypeScript + Vite
+# React Three Fiber Practice
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A collection of interactive 3D scenes built with React Three Fiber, exploring physics, animation, and character movement. Each scene is accessible from the top navigation bar.
 
-Currently, two official plugins are available:
+## Scenes
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+### Rotating Cube
+A simple animated cube that rotates continuously. The entry point for the project — demonstrates basic R3F setup, mesh rendering, and `useFrame` animation.
 
-## React Compiler
+### Solar System
+An animated solar system with a central sun, orbiting planets, and a starfield background. Demonstrates hierarchical object transforms and `useFrame`-driven orbital mechanics.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Wave Grid
+A procedurally animated mesh where each vertex oscillates using a sine wave. Includes a live controls panel with sliders for **amplitude**, **frequency**, and **speed**. Demonstrates custom geometry mutation inside `useFrame`.
 
-## Expanding the ESLint configuration
+### Physics
+A Rapier-powered physics sandbox with a draggable sphere and a field of falling spheres. The draggable sphere can be picked up and thrown with the mouse. Includes a **Reload** button in the header to reset the simulation.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Third Person
+A momentum-based third-person character controller. Features:
+- **WASD / Arrow keys** — move the character
+- **Space** — jump
+- **Mouse drag** — orbit the camera
+- Velocity lerping for smooth acceleration and deceleration
+- Surface normal alignment — the character tilts to match slopes
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+| Package | Purpose |
+|---|---|
+| `@react-three/fiber` | React renderer for Three.js |
+| `@react-three/drei` | Helpers: `OrbitControls`, `KeyboardControls`, `Sky`, etc. |
+| `@react-three/rapier` | Rapier physics engine bindings |
+| `three` | Core 3D library |
+| `tailwindcss` | UI styling |
+| `vite` + `typescript` | Build tooling |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Running Locally
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
