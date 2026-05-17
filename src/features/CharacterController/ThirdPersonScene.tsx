@@ -20,7 +20,7 @@ export default function ThirdPersonScene() {
 
   return (
     <KeyboardControls map={CONTROLS}>
-      <Canvas camera={{ position: [0, 3, 6], fov: 70 }} shadows="percentage">
+      <Canvas camera={{ position: [0, 2, 4], fov: 70 }} shadows="percentage">
         <Sky />
         <ambientLight intensity={0.7} />
         <directionalLight

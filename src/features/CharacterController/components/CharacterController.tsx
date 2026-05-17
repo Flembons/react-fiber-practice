@@ -8,7 +8,7 @@ import {
   type RapierRigidBody,
 } from "@react-three/rapier";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
-import { Vector3 } from "three";
+import { Vector3, Matrix4 } from "three";
 import type { Group } from "three";
 import { useKeyboardControls } from "@react-three/drei";
 import Character from "./Character";
@@ -17,11 +17,13 @@ interface CharacterControllerProps {
   orbitRef: RefObject<OrbitControlsImpl | null>;
 }
 
-const SPEED = 10.0;
-const JUMP_FORCE = 12.0;
+const SPEED = 8.0;
+const JUMP_FORCE = 8.0;
 const ROTATION_SPEED = 8.0;
 const ACCEL_FACTOR = 12.0;
 const DECEL_FACTOR = 8.0;
+const CAMERA_TARGET_OFFSET = 0.35;
+const ALIGN_SPEED = 7.0;
 
 export default function CharacterController({
   orbitRef,
@@ -33,6 +35,8 @@ export default function CharacterController({
 
   const isGrounded = useRef(false);
   const jumpPrev = useRef(false);
+  const yawRef = useRef(0);
+  const surfaceNormal = useRef(new Vector3(0, 1, 0));
 
   useFrame(({ camera }, delta) => {
     if (!rbRef.current) return;
@@ -41,9 +45,9 @@ export default function CharacterController({
     const currentVelocity = rbRef.current.linvel();
     const playerPos = rbRef.current.translation();
 
-    // Grounded detection via short downward raycast
+    // Grounded detection + surface normal via downward raycast
     const ray = new rapier.Ray(playerPos, { x: 0, y: -1, z: 0 });
-    const hit = world.castRay(
+    const hit = world.castRayAndGetNormal(
       ray,
       0.85,
       true,
@@ -86,33 +90,55 @@ export default function CharacterController({
 
     rbRef.current.setLinvel({ x: newVx, y: newVy, z: newVz }, true);
 
-    // Drive visual position directly from physics translation so it matches
-    // the camera target in the same frame — Rapier's own mesh sync happens at
-    // a different point in the loop and would otherwise lag by one frame.
-    if (visualRef.current) {
-      visualRef.current.position.set(playerPos.x, playerPos.y, playerPos.z);
-    }
-
-    // Rotate visual toward movement direction
-    if (hasInput && visualRef.current) {
+    // Update yaw toward movement direction
+    if (hasInput) {
       const targetAngle = Math.atan2(moveDirection.x, moveDirection.z);
-      let diff = targetAngle - visualRef.current.rotation.y;
+      let diff = targetAngle - yawRef.current;
       while (diff > Math.PI) diff -= Math.PI * 2;
       while (diff < -Math.PI) diff += Math.PI * 2;
-      visualRef.current.rotation.y +=
-        diff * Math.min(ROTATION_SPEED * delta, 1);
+      yawRef.current += diff * Math.min(ROTATION_SPEED * delta, 1);
+    }
+
+    if (visualRef.current) {
+      visualRef.current.position.set(playerPos.x, playerPos.y, playerPos.z);
+
+      // Lerp surface normal toward the hit normal (or world up when airborne)
+      const targetNormal =
+        hit !== null
+          ? new Vector3(hit.normal.x, hit.normal.y, hit.normal.z)
+          : new Vector3(0, 1, 0);
+      surfaceNormal.current
+        .lerp(targetNormal, Math.min(ALIGN_SPEED * delta, 1))
+        .normalize();
+
+      // Build rotation: local Y = surface normal, local Z = yaw projected onto surface
+      const up = surfaceNormal.current;
+      const worldFacing = new Vector3(
+        Math.sin(yawRef.current),
+        0,
+        Math.cos(yawRef.current),
+      );
+      const fwd = worldFacing
+        .clone()
+        .sub(up.clone().multiplyScalar(worldFacing.dot(up)))
+        .normalize();
+      const rgt = new Vector3().crossVectors(up, fwd);
+      visualRef.current.quaternion.setFromRotationMatrix(
+        new Matrix4().makeBasis(rgt, up, fwd),
+      );
     }
 
     // Follow the player: translate both target and camera by the same delta
     // so the view angle and distance are preserved each frame.
     if (orbitRef.current) {
+      const targetY = playerPos.y + CAMERA_TARGET_OFFSET;
       const dx = playerPos.x - orbitRef.current.target.x;
-      const dy = playerPos.y - orbitRef.current.target.y;
+      const dy = targetY - orbitRef.current.target.y;
       const dz = playerPos.z - orbitRef.current.target.z;
       camera.position.x += dx;
       camera.position.y += dy;
       camera.position.z += dz;
-      orbitRef.current.target.set(playerPos.x, playerPos.y, playerPos.z);
+      orbitRef.current.target.set(playerPos.x, targetY, playerPos.z);
       orbitRef.current.update();
     }
   });
@@ -127,7 +153,11 @@ export default function CharacterController({
         lockRotations
         position={[0, 2, 0]}
       >
-        <CapsuleCollider args={[0.4, 0.35]} />
+        <CapsuleCollider
+          args={[0.4, 0.35]}
+          friction={0}
+          frictionCombineRule={rapier.CoefficientCombineRule.Min}
+        />
       </RigidBody>
       <Character ref={visualRef} />
     </>
