@@ -27,7 +27,6 @@ export default function App() {
   const [active, setActive] = useState(getSavedScene);
   const [displayed, setDisplayed] = useState(getSavedScene);
   const [leaving, setLeaving] = useState(false);
-  const [physicsResetKey, setPhysicsResetKey] = useState(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleSelect = (id: string) => {
@@ -43,21 +42,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col h-screen">
-      <Header
-        scenes={SCENES}
-        active={active}
-        onSelect={handleSelect}
-        rightContent={
-          active === "physics-scene" ? (
-            <button
-              onClick={() => setPhysicsResetKey((k) => k + 1)}
-              className="px-3 py-2 rounded-md cursor-pointer text-sm font-medium transition-colors duration-250 bg-none hover:bg-gray-800 hover:text-gray-400 text-gray-500"
-            >
-              Reload
-            </button>
-          ) : undefined
-        }
-      />
+      <Header scenes={SCENES} active={active} onSelect={handleSelect} />
       <main className="relative flex-1 bg-[#0a0a1a]">
         <div
           key={displayed}
@@ -66,9 +51,7 @@ export default function App() {
           {displayed === "rotating-cube" && <RotatingCubeScene />}
           {displayed === "solar-system" && <SolarSystem />}
           {displayed === "wave-grid" && <WaveGrid />}
-          {displayed === "physics-scene" && (
-            <PhysicsScene resetKey={physicsResetKey} />
-          )}
+          {displayed === "physics-scene" && <PhysicsScene />}
           {displayed === "third-person" && <ThirdPersonScene />}
         </div>
       </main>
