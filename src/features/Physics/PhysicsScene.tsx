@@ -14,7 +14,7 @@ export default function PhysicsScene() {
 
   return (
     <div className="w-full h-full relative">
-      <Canvas camera={{ position: [0, 15, 50], fov: 75 }} shadows="percentage">
+      <Canvas camera={{ position: [0, 15, 60], fov: 75 }} shadows="percentage">
         <color attach="background" args={["#0a0a1a"]} />
         <ambientLight intensity={0.8} />
         <directionalLight intensity={1.2} position={[5, 10, 5]} castShadow />
@@ -25,7 +25,7 @@ export default function PhysicsScene() {
               <DraggableSphere />
               <SphereField />
             </Physics>
-            <OrbitControls ref={orbitRef} target={[0, 10, 0]} />
+            <OrbitControls ref={orbitRef} target={[0, 15, 0]} />
           </Suspense>
         </DragContext.Provider>
       </Canvas>

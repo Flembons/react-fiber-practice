@@ -24,7 +24,7 @@ export default function WaveGrid() {
         onCreated={({ gl }) => gl.setClearColor("#0a0a1a", 1)}
       >
         <color attach="background" args={["#0a0a1a"]} />
-        <PerspectiveCamera makeDefault position={[0, 10, 15]} fov={60} />
+        <PerspectiveCamera makeDefault position={[0, 12, 25]} fov={70} />
         <ambientLight intensity={1} />
         <directionalLight intensity={1} position={[5, 10, 5]} />
         <WaveMesh amplitude={amplitude} frequency={frequency} speed={speed} />
