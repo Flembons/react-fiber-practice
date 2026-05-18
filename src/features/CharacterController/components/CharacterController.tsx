@@ -18,7 +18,7 @@ interface CharacterControllerProps {
 }
 
 const MAX_SPEED = 8.0;
-const ACCELERATION = 12.0;
+const ACCELERATION = 8.0;
 const DECELERATION = 8.0;
 const ROTATION_SPEED = 8.0;
 const CAMERA_TARGET_OFFSET = 0.35;
