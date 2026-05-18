@@ -58,11 +58,11 @@ export default function Header({ scenes, active, onSelect }: HeaderProps) {
 
       {/* Mobile sidebar */}
       <div
-        className={`fixed inset-0 bg-black/50 z-40 sm:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`fixed inset-0 bg-black/50 z-60 sm:hidden transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
         onClick={() => setOpen(false)}
       />
       <div
-        className={`fixed inset-y-0 left-0 w-56 bg-[#0f0f1a] border-r border-[#ffffff18] z-50 sm:hidden flex flex-col p-3 gap-1 transition-[margin-left] duration-300 ease-out ${open ? "ml-0" : "-ml-56"}`}
+        className={`fixed inset-y-0 left-0 w-56 bg-[#0f0f1a] border-r border-[#ffffff18] z-70 sm:hidden flex flex-col p-3 gap-1 transition-[margin-left] duration-300 ease-out ${open ? "ml-0" : "-ml-56"}`}
       >
         <button
           className="cursor-pointer self-end text-gray-500 hover:text-white p-1 mb-2"
