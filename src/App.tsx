@@ -5,6 +5,7 @@ import SolarSystem from "./features/SolarSystem/SolarSystem";
 import WaveGrid from "./features/WaveGrid/WaveGrid";
 import PhysicsScene from "./features/Physics/PhysicsScene";
 import ThirdPersonScene from "./features/CharacterController/ThirdPersonScene";
+import JumpyScene from "./features/Jumpy/JumpyScene";
 
 const FADE_DURATION = 200;
 const STORAGE_KEY = "active-scene";
@@ -21,6 +22,7 @@ const SCENES = [
   { id: "wave-grid", label: "Wave Grid" },
   { id: "physics-scene", label: "Physics" },
   { id: "third-person", label: "Third Person" },
+  { id: "jumpy", label: "Jumpy" },
 ];
 
 export default function App() {
@@ -53,6 +55,7 @@ export default function App() {
           {displayed === "wave-grid" && <WaveGrid />}
           {displayed === "physics-scene" && <PhysicsScene />}
           {displayed === "third-person" && <ThirdPersonScene />}
+          {displayed === "jumpy" && <JumpyScene />}
         </div>
       </main>
     </div>
